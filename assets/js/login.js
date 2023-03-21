@@ -1,4 +1,5 @@
-window.addEventListener('load', function () {
+$(function () {
+	// 登录页面和注册页面的切换
 	let link_reg = document.querySelector('#link_reg')
 	let link_login = document.querySelector('#link_login')
 	link_reg.addEventListener('click', function (e) {
@@ -10,6 +11,7 @@ window.addEventListener('load', function () {
 		link_reg.parentNode.style.display = 'block'
 	})
 
+	// 表单验证
 	var form = layui.form
 	form.verify({
 		username: function (value, item) {
@@ -30,9 +32,91 @@ window.addEventListener('load', function () {
 				return true
 			}
 		},
-
 		//我们既支持上述函数式的方式，也支持下述数组的形式
 		//数组的两个值分别代表：[正则匹配、匹配不符时的提示文字]
-		pass: [/^\S*(?=\S{6,12})(?=\S*\d)(?=\S*[A-Z])(?=\S*[a-z])(?=\S*[!@#$%^&*? ])\S*$/, '密码必须6到12位，且包含大写字母、小写字母、数字、特殊字符中的任意三项'],
+		pass: [/^[\S]{6,12}$/, '密码必须6到12位，且不能出现空格'],
+		repwd: function (value, item) {
+			let pwd = document.querySelector('.reg-box [name=password]')
+			if (value !== pwd.value) {
+				return '两次密码不一致'
+			}
+		},
+	})
+
+	var layer = layui.layer
+	// 监听注册表单的提交事件
+	$('#reg-form').on('submit', function (e) {
+		e.preventDefault()
+		let formstr = $(this).serialize()
+		let datastr = formstr.substring(0, formstr.indexOf('repassword') - 1)
+		$.ajax({
+			method: 'POST',
+			url: '/api/reguser',
+			data: datastr,
+			success: function (res) {
+				if (res.status !== 0) {
+					return layer.msg(
+						res.message,
+						{
+							icon: 5,
+							time: 2000, //2秒关闭（如果不配置，默认是3秒）
+						},
+						function () {
+							//注册失败提示框结束以后的处理
+						}
+					)
+				}
+				// 注册成功
+				layer.msg(
+					res.message,
+					{
+						icon: 1,
+						time: 2000, //2秒关闭（如果不配置，默认是3秒）
+					},
+					function () {
+						link_login.click()
+						$('#reg-form')[0].reset()
+					}
+				)
+			},
+		})
+	})
+
+	// 监听登录表单的提交事件
+	$('#login-form').on('submit', function (e) {
+		e.preventDefault()
+		let formstr = $(this).serialize()
+		$.post('/api/login', formstr, (res) => {
+			if (res.status !== 0) {
+				return layer.msg(
+					'登录失败',
+					{
+						icon: 5,
+						time: 2000, //2秒关闭（如果不配置，默认是3秒）
+					},
+					function () {
+						//登录失败的回调函数
+						// document.querySelector('#login-form').reset()
+					}
+				)
+			}
+			// 登录成功
+			layer.msg(
+				'登录成功',
+				{
+					icon: 1,
+					time: 2000, //2秒关闭（如果不配置，默认是3秒）
+				},
+				function () {
+					// console.log(res.token)   能够成功获取token
+					// 可以将登录成功得到的token字符串保存在localStorage中
+					localStorage.setItem('token', res.token)
+					//跳转到首页
+					location.href = '/index.html'
+					// 清空表单
+					document.querySelector('#login-form').reset()
+				}
+			)
+		})
 	})
 })
