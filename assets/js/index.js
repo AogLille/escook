@@ -1,5 +1,6 @@
 $(function () {
 	getUserInfo()
+	// 退出按钮实现退出
 	$('.quit').on('click', function () {
 		layui.layer.confirm('确认退出登录吗?', { icon: 3, title: '注意', area: ['360px', '175px'] }, function (index) {
 			localStorage.removeItem('token')
