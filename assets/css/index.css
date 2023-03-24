@@ -27,10 +27,12 @@
 	height: 40px;
 }
 .userinfro {
+	position: relative;
 	height: 60px;
 	line-height: 60px;
 	text-align: center;
 	user-select: none;
+	left: -15px;
 }
 
 div.userinfro {

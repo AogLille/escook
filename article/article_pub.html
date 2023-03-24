@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <!-- 导入layui的css样式 -->
+    <link rel="stylesheet" href="/assets/lib/layui/css/layui.css">
+    <!-- 导入cropper的css样式 -->
+    <link rel="stylesheet" href="/assets/lib/cropper/cropper.css" />
+    <!-- 导入自己的css -->
+    <link rel="stylesheet" href="/assets/css/article/article_pub.css">
+</head>
+
+<body>
+    <div class="layui-card">
+        <div class="layui-card-header">发布文章</div>
+        <div class="layui-card-body">
+            <!-- 文章发表表单 -->
+            <form class="layui-form" id="art-Form">
+                <!-- 文章标题行 -->
+                <div class="layui-form-item">
+                    <label class="layui-form-label">文章标题</label>
+                    <div class="layui-input-block">
+                        <input type="text" name="title" required lay-verify="required" placeholder="请输入文章标题"
+                            autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <!-- 文章分类行 -->
+                <div class="layui-form-item">
+                    <label class="layui-form-label">文章类别</label>
+                    <div class="layui-input-block">
+                        <select name="cate_id" lay-verify="required" id="selectClassify">
+                        </select>
+                    </div>
+                </div>
+                <!-- 富文本编辑器行-->
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">文章内容</label>
+                    <div class="layui-input-block" style="height: 400px;">
+                        <!-- 重要：将来这个 textarea 会被初始化为富文本编辑器 -->
+                        <textarea name="content"></textarea>
+                    </div>
+                </div>
+                <!-- 图片裁剪区域 -->
+                <div class="layui-form-item">
+                    <!-- 左侧的 label -->
+                    <label class="layui-form-label">文章封面</label>
+                    <!-- 选择封面区域 -->
+                    <div class="layui-input-block cover-box">
+                        <!-- 左侧裁剪区域 -->
+                        <div class="cover-left">
+                            <img id="image" src="/assets/images/sample2.jpg" alt="" />
+                        </div>
+                        <!-- 右侧预览区域和选择封面区域 -->
+                        <div class="cover-right">
+                            <!-- 预览的区域 -->
+                            <div class="img-preview"></div>
+                            <!-- 选择封面按钮 -->
+                            <button type="button" class="layui-btn layui-btn-danger btnUpload">选择封面</button>
+                            <!-- 隐藏的文件选择框 -->
+                            <input type="file" id="fileUpload" accept="image/png,image/jpeg">
+                        </div>
+                    </div>
+                </div>
+                <!-- 按钮区域 -->
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <button class="layui-btn" lay-submit id="btnSubmit">发布</button>
+                        <button class="layui-btn layui-btn-primary" lay-submit id="btnSave">存为草稿</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- 文章类别模板结构 -->
+    <script type="text/html" id="tql-classify">
+        <option value="">请选择文章类别</option>
+        {{each data}}
+        <option value={{$value.Id}}>{{$value.name}}</option>
+        {{/each}}
+    </script>
+
+    <!-- 导入jQuery脚本 -->
+    <script src="/assets/lib/jquery.js"></script>
+    <!-- 导入layui脚本 -->
+    <script src="/assets/lib/layui/layui.all.js"></script>
+    <!-- 导入template模板引擎脚本 -->
+    <script src="/assets/lib/template-web.js"></script>
+    <!-- 导入富文本编辑器的脚本 -->
+    <script src="/assets/lib/tinymce/tinymce.min.js"></script>
+    <script src="/assets/lib/tinymce/tinymce_setup.js"></script>
+    <!-- 导入cropper的脚本 -->
+    <script src="/assets/lib/jquery.js"></script>
+    <script src="/assets/lib/cropper/Cropper.js"></script>
+    <script src="/assets/lib/cropper/jquery-cropper.js"></script>
+    <!-- 导入初始化ajax请求脚本 -->
+    <script src="/assets/js/baseAPI.js"></script>
+    <!-- 导入自己的js脚本 -->
+    <script src="/assets/js/article/aritcle_pub.js"></script>
+
+    <script>
+        $(function () {
+            let layer = layui.layer
+            let form = layui.form
+
+            // 获取文章分类
+            $.ajax({
+                method: 'GET',
+                url: '/my/article/cates',
+                success: function (res) {
+                    if (res.status !== 0) {
+                        return layer.msg(res.message)
+                    }
+                    let htmlStr = template('tql-classify', res)
+                    $('#selectClassify').html(htmlStr)
+                    form.render()
+                }
+            })
+            // 初始化富文本编辑器
+            initEditor()
+            //初始化图片裁剪区域
+            // 1. 初始化图片裁剪器
+            var $image = $('#image')
+            // 2. 裁剪选项
+            var options = {
+                aspectRatio: 400 / 280,
+                preview: '.img-preview'
+            }
+            // 3. 初始化裁剪区域
+            $image.cropper(options)
+            // 为选择封面按钮绑定事件
+            $('.btnUpload').click(function (e) {
+                $('#fileUpload').click()
+            })
+            // 监听选择文件事件
+            $('#fileUpload').on('change', function (e) {
+                if (e.target.files.length < 1) {
+                    return layer.msg('上传失败')
+                }
+                // 获取文件
+                var file = e.target.files[0]
+                // 将文件转换为url路径
+                var newImgURL = URL.createObjectURL(file)
+                // 重新初始化裁剪区域
+                $image
+                    .cropper('destroy') // 销毁旧的裁剪区域
+                    .attr('src', newImgURL) // 重新设置图片路径
+                    .cropper(options) // 重新初始化裁剪区域
+            })
+
+
+            // 定义文章状态,默认为已发布状态
+            let art_state = '已发布'
+            // 为存为草稿按钮绑定点击事件处理函数
+            $('#btnSave').on('click', function (e) {
+                art_state = '草稿'
+            })
+            // 为发布按钮绑定点击事件处理函数
+            $('#btnSubmit').on('click', function (e) {
+                art_state = '已发布'
+            })
+
+            // 发布函数
+            $('#art-Form').on('submit', function (e) {
+                e.preventDefault()
+                let formdata = new FormData($(this)[0])
+                // 将状态追加到formdata中
+                formdata.append('state', art_state)
+                // 将封面裁剪追加到formdata中
+                $image
+                    .cropper('getCroppedCanvas', { // 创建一个 Canvas 画布
+                        width: 400,
+                        height: 280
+                    })
+                    .toBlob(function (blob) {       // 将 Canvas 画布上的内容，转化为文件对象
+                        // 得到文件对象后，进行后续的操作
+                        formdata.append('cover_img', blob)
+                    })
+                // formdata.forEach((element, key) => {
+                //     console.log(key + ':' + element)
+                // });
+                // 发送ajax请求
+                $.ajax({
+                    method: 'POST',
+                    url: '/my/article/add',
+                    data: formdata,
+                    // 如果向服务器提交的是formdata格式的数据必须添加以下的两个数据项
+                    contentType: false,
+                    processData: false,
+                    success: function (res) {
+                        if (res.status !== 0) {
+                            return layer.msg(res.message)
+                        }
+                        layer.msg(res.message)
+                        $('#art-Form')[0].reset()
+                        location.href = '/article/article_list.html'
+                    }
+                })
+            })
+
+        })
+    </script>
+</body>
+
+</html>

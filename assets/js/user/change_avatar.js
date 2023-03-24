@@ -22,15 +22,6 @@ $(function () {
 		if (e.target.files.length < 1) {
 			return layer.msg('上传失败')
 		}
-		// 获取文件
-		var file = e.target.files[0]
-		// 将文件转换为url路径
-		var newImgURL = URL.createObjectURL(file)
-		// 重新初始化裁剪区域
-		$image
-			.cropper('destroy') // 销毁旧的裁剪区域
-			.attr('src', newImgURL) // 重新设置图片路径
-			.cropper(options) // 重新初始化裁剪区域
 	})
 
 	// 为确定按钮绑定点击事件
